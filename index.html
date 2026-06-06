@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>CBE SMS Simulator System | የንግድ ባንክ ሲሙሌተር</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #e9eef3 0%, #dce3ec 100%);
+            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, 'BlinkMacSystemFont', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        /* ዋና ካርድ */
+        .sim-card {
+            max-width: 1000px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        /* ገጽ አቀማመጥ */
+        .page {
+            display: none;
+            padding: 28px 32px;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeSlide 0.25s ease-out;
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* main work area (page1) */
+        .dashboard-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+        }
+
+        .form-panel {
+            flex: 1.3;
+            min-width: 260px;
+        }
+
+        .preview-panel {
+            flex: 1;
+            background: #fefefe;
+            border-radius: 1.5rem;
+            padding: 1.25rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.02), 0 0 0 1px #eef2f6;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+            color: #1e2a3e;
+            margin-bottom: 6px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1.5px solid #e2e8f0;
+            background: #ffffff;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            outline: none;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: #5c5470;
+            box-shadow: 0 0 0 3px rgba(92, 84, 112, 0.2);
+        }
+
+        .btn {
+            width: 100%;
+            border: none;
+            font-weight: 700;
+            padding: 12px 0;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 6px;
+            margin-bottom: 10px;
+            background: #2d3e50;
+            color: white;
+        }
+
+        .btn-primary {
+            background: #5c5470;
+            box-shadow: 0 4px 8px rgba(92, 84, 112, 0.2);
+        }
+        .btn-primary:hover {
+            background: #433e56;
+            transform: scale(0.98);
+        }
+
+        .btn-success {
+            background: #2e7d32;
+            box-shadow: 0 4px 10px rgba(46, 125, 50, 0.2);
+        }
+        .btn-success:hover {
+            background: #1b5e20;
+        }
+
+        .btn-bulk {
+            background: #1e4a76;
+            margin-top: 8px;
+        }
+        .btn-bulk:hover {
+            background: #0f3b5c;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #49545c;
+        }
+        .preview-box {
+            background: #f8fafc;
+            border-radius: 1rem;
+            padding: 1rem;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #0f172a;
+            border: 1px solid #e2edf2;
+            margin: 15px 0 20px 0;
+            min-height: 160px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: 'SF Mono', 'Menlo', monospace;
+        }
+
+        .badge-header {
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+            color: #334155;
+        }
+
+        hr {
+            margin: 12px 0;
+            border: none;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .bulk-card {
+            max-width: 620px;
+            margin: 0 auto;
+        }
+
+        textarea {
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        /* አጫጫኛ ተጨማሪ */
+        .info-note {
+            font-size: 0.7rem;
+            color: #5c6f87;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        @media (max-width: 700px) {
+            .page {
+                padding: 20px;
+            }
+            .dashboard-layout {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sim-card">
+    <!-- PAGE 1 - ዋና መግለጫ ማመንጪያ -->
+    <div id="page1" class="page active">
+        <div class="dashboard-layout">
+            <!-- ግቤት ፎርም -->
+            <div class="form-panel">
+                <h3 style="margin-bottom: 1.3rem; font-weight: 700; color: #1f2b38;">📱 CBE Transaction SMS</h3>
+                <div class="form-group">
+                    <label>🏷️ የግብይት አይነት</label>
+                    <select id="transactionType">
+                        <option value="Credited">✅ Credited (ገንዘብ ገብቷል)</option>
+                        <option value="Debited">🔻 Debited (ገንዘብ ወጥቷል)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🧑 ሙሉ ስም (ደንበኛ)</label>
+                    <input type="text" id="fullName" placeholder="ለምሳሌ: አለሙ ተፈራ" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>🔢 አካውንት ቁጥር (እስከ 13 አሃዝ)</label>
+                    <input type="text" id="accountNumber" placeholder="1000134567890" maxlength="13" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                </div>
+                <div class="form-group">
+                    <label>💰 የብር መጠን (ETB)</label>
+                    <input type="text" id="amount" placeholder="0.00" inputmode="decimal" oninput="validateAmountInput(this)">
+                </div>
+                <button class="btn btn-primary" onclick="generateSMS()">✉️ Send / Enter → አመንጭ</button>
+            </div>
+
+            <!-- የቅድመ ዕይታ ክፍል -->
+            <div class="preview-panel">
+                <div class="badge-header">📄 የተፈጠረ የSMS ጽሑፍ</div>
+                <div id="smsPreview" class="preview-box">
+                    <!-- እንቅስቃሴ ናሙና ይታያል -->
+                    እባክዎ መረጃ ይሙሉና "Send / Enter" ይጫኑ
+                </div>
+                <button class="btn btn-primary" id="copyBtn" onclick="copyToClipboard()">📋 Copy Text</button>
+                <button class="btn btn-bulk" onclick="goToBulkSender()">📡 Bulk SMS → ወደ ጅምላ መላኪያ</button>
+                <div class="info-note">✅ ቴክስቱን ከፈጠሩ በኋላ ወደ Bulk ማስተላለፍ ይችላሉ</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 2 - Bulk SMS Gateway ገጽ -->
+    <div id="page2" class="page">
+        <div class="bulk-card">
+            <h3 style="margin-bottom: 1rem; color: #1f2b38; border-left: 5px solid #2e7d32; padding-left: 12px;">📨 Bulk SMS Simulator</h3>
+        <div class="form-group">
+                <label>📢 ከላይ የሚታየው ላኪ ስም (Sender ID)</label>
+                <input type="text" id="senderDisplayId" value="CBE" placeholder="ለም: CBE, BANK, 6050">
+            </div>
+            
+            <div class="form-group">
+                <label>📞 የተቀባይ ስልክ ቁጥር</label>
+                <input type="tel" id="receiverPhone" placeholder="09XXXXXXXX or +2519XXXXXXXX" oninput="this.value = this.value.replace(/[^0-9+]/g, '');">
+            </div>
+            
+            <div class="form-group">
+                <label>💬 የሚላከው መልዕክት (SMS content)</label>
+                <textarea id="bulkMessageText" rows="5" class="bulk-text-area" placeholder="ከዋናው ገጽ የመነጨ ቴክስት በራስ ይሞላል፣ እዚህ ማረም ይቻላል..."></textarea>
+            </div>
+
+            <button class="btn btn-success" onclick="sendFinalSMS()">📤 Send SMS (Simulate)</button>
+            <button class="btn btn-secondary" onclick="goBackToPage1()">← ወደ መጀመሪያ ገጽ ተመለስ</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- ግሎባል ተለዋዋጮች ----------
+    let generatedGlobalText = "";          // አዲስ የመነጨው ቴክስት እዚህ ይቀመጣል
+    let isSmsGenerated = false;
+    
+    // ለመጀመሪያ ጊዜ ናሙና መረጃዎች
+    function setDemoData() {
+        const fullNameInput = document.getElementById('fullName');
+        const accountInput = document.getElementById('accountNumber');
+        const amountInput = document.getElementById('amount');
+        
+        if(fullNameInput && !fullNameInput.value.trim()) fullNameInput.value = "ብርሃን አሰፋ";
+        if(accountInput && !accountInput.value.trim()) accountInput.value = "1000278912345";
+        if(amountInput && (!amountInput.value.trim() || amountInput.value === "0.00")) amountInput.value = "4250.75";
+        
+        // መጀመሪያ ላይ የተፈጠረ ናሙና ቴክስት ለማሳየት
+        generateSMS(); 
+    }
+    
+    // የAmount ማረጋገጫ (ቁጥር እና አንድ ነጥብ ብቻ)
+    function validateAmountInput(inputElement) {
+        let val = inputElement.value;
+        val = val.replace(/[^0-9.]/g, '');
+        // ከአንድ በላይ ነጥብ እንዳይኖር
+        const dotCount = (val.match(/\./g) || []).length;
+        if (dotCount > 1) {
+            val = val.substring(0, val.lastIndexOf('.'));
+        }
+        // ከፊት ተደጋጋሚ ዜሮ ቁጥሮች ለማስወገድ ቀላል ማጣሪያ
+        if (val.startsWith('0') && val.length > 1 && !val.startsWith('0.')) {
+            val = val.replace(/^0+/, '');
+            if(val === '') val = '0';
+        }
+        inputElement.value = val;
+        if (val === '') inputElement.value = '0.00';
+    }
+
+    // ዋናው መልዕክት ማመንጨት (የተሻሻለ ፕሮፌሽናል ቅርጸት)
+    function generateSMS() {
+        const type = document.getElementById('transactionType').value;
+        let fullName = document.getElementById('fullName').value.trim();
+        let accountNum = document.getElementById('accountNumber').value.trim();
+        let amountRaw = document.getElementById('amount').value.trim();
+
+        // ማረጋገጫዎች
+        if (!fullName) {
+            alert("❌ እባክዎ የደንበኛውን ሙሉ ስም ያስገቡ!");
+            return;
+        }
+        if (!accountNum) {
+            alert("❌ እባክዎ ትክክለኛ አካውንት ቁጥር ያስገቡ!");
+            return;
+        }
+        if (!amountRaw  amountRaw === "0.00"  parseFloat(amountRaw) === 0) {
+            alert("⚠️ እባክዎ ከዜሮ በላይ የሆነ ትክክለኛ የብር መጠን ያስገቡ!");
+            return;
+        }
+        
+        let amountValue = parseFloat(amountRaw);
+        if (isNaN(amountValue) || amountValue <= 0) {
+            alert("💰 የብር መጠን አዎንታዊ ቁጥር መሆን አለበት (ከ 0 በላይ)");
+            return;
+        }
+        
+        const formattedAmount = amountValue.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        
+        // ጊዜ እና ቀን ማዘጋጀት
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' });
+        const dateStr = now.toLocaleDateString('en-GB');  // DD/MM/YYYY
+        
+        // ማጣቀሻ ቁጥር (Ref No) ማመንጨት
+        let refNo = 'CBE';
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        for (let i = 0; i < 8; i++) refNo += chars.charAt(Math.floor(Math.random() * chars.length));
+        
+        // Account ማሳጠር (ማስክ)  ለምሳሌ 1000**7890
+        let maskedAccount = '';
+        if (accountNum.length >= 6) {
+            const startPart = accountNum.substring(0, 4);
+            const endPart = accountNum.substring(accountNum.length - 4);
+            maskedAccount = ${startPart}******${endPart};
+        } else if (accountNum.length >= 4) {
+            const startPart = accountNum.substring(0, 2);
+            const endPart = accountNum.substring(accountNum.length - 2);
+            maskedAccount = ${startPart}****${endPart};
+        } else {
+            maskedAccount = "****" + accountNum;
+        }
+        
+        // የማሳወቂያ ጽሑፍ የተሻሻለ (ክፍያ ምንነት እና ሚዛን የሚመስል ማሳያ)
+        // ሚዛን እንደ ተጨማሪ ማሳያ በሲሙሌሽን መልኩ አስቀምጠናል (የንግድ ባንክ ማስመሰል)
+        const demoBalance = (Math.random() * 50000 + 15000).toFixed(2);
+        const balanceFormatted = parseFloat(demoBalance).toLocaleString('en-US', { minimumFractionDigits: 2 });
+        
+        let transactionFlow = (type === "Credited") ? "ገብቷል" : "ወጥቷል";
+        let verb = (type === "Credited") ? "Credited to" : "Debited from";
+        
+        // ሙሉ ጽሑፍ - ከደንበኛ ስም ጋር ግልጽ፣ ከዘመናዊ ቅርጸት ጋር
+        const finalMessage = Dear ${fullName}, your account ${maskedAccount} has been ${type} with ETB ${formattedAmount} ${verb} transaction on ${dateStr} at ${timeStr}. Ref: ${refNo}. Your available balance is ETB ${balanceFormatted}. Thank you for banking with CBE!;
+        
+        // ዓለም አቀፍ ተለዋዋጭ ማዘመን
+        generatedGlobalText = finalMessage;
+        isSmsGenerated = true;
+        
+        // ቅድመ እይታ ማሳየት
+        const previewDiv = document.getElementById('smsPreview');
+        previewDiv.innerText = generatedGlobalText;
+        previewDiv.classList.add('preview-box');
+        
+        // የCopy ቁልፍ ሁኔታ እንዲሻሻል
+        const copyBtn = document.getElementById('copyBtn');
+        if(copyBtn) copyBtn.innerText = "📋 Copy Text";
+    }
+    
+    // Copy to Clipboard (ከዋናው ገጽ)
+    function copyToClipboard() {
+        if (!isSmsGenerated || !generatedGlobalText) {
+            alert("⚠️ በመጀመሪያ መረጃዎችን ሙልተው 'Send / Enter' ቁልፍ ይጫኑ!");
+            return;
+        }
+        navigator.clipboard.writeText(generatedGlobalText).then(() => {
+            const copyBtn = document.getElementById('copyBtn');
+            const originalText = copyBtn.innerText;
+            copyBtn.innerText = "✅ ተቀድቷል!";
+            setTimeout(() => {
+                copyBtn.innerText = originalText;
+            }, 2000);
+        }).catch(() => {
+            alert("❌ ቅጂ ማድረግ አልተሳካም");
+        });
+    }
+    
+    // ወደ Bulk SMS ገጽ መሄድ እና የመነጨውን ቴክስት ማስተላለፍ
+    function goToBulkSender() {
+        if (!isSmsGenerated || !generatedGlobalText) {
+            alert("📢 እባክዎ መጀመሪያ በዋናው ገጽ 'Send / Enter' በመጫን ቴክስት ያመንጩ!");
+            return;
+        }
+        // ገጾች መቀየር
+        document.getElementById('page1').classList.remove('active');
+        document.getElementById('page2').classList.add('active');
+        
+        // የBulk መልዕክት አካባቢ ማዘመን
+        const bulkTextArea = document.getElementById('bulkMessageText');
+        if (bulkTextArea) {
+            bulkTextArea.value = generatedGlobalText;
+        }
+        
+        // የስልክ ቁጥር እና ላኪ ማስቀመጫ አይቀየርም (ነባር ይቆያል)
+        // አማራጭ: ለምቾት አንድ ናሙና ስልክ ቁጥር ካልሞላ መሙላት አንፈልግም
+    }
+    
+    // ወደ page1 መመለስ
+    function goBackToPage1() {
+        document.getElementById('page2').classList.remove('active');
+        document.getElementById('page1').classList.add('active');
+    }
+    
+    // የBulk መላኪያ ማስመሰል (ማሳወቂያ)
+        function sendFinalSMS() {
+        const senderId = document.getElementById('senderDisplayId').value.trim();
+        const phone = document.getElementById('receiverPhone').value.trim();
+        const messageText = document.getElementById('bulkMessageText').value.trim();
+        
+        if (!senderId) {
+            alert("⚠️ እባክዎ ከላይ የሚታየውን የላኪ ስም (Sender ID) ይሙሉ!");
+            return;
+        }
+        if (!phone) {
+            alert("📞 እባክዎ የተቀባዩን ስልክ ቁጥር ያስገቡ!");
+            return;
+        }
+        if (!messageText) {
+            alert("✉️ የሚላከው መልዕክት ባዶ ነው! በመጀመሪያ ቴክስት ያመንጩ ወይም ይጻፉ");
+            return;
+        }
+        
+        // ስልክ ቁጥር ቅርጸት ቀላል ማሳወቂያ
+        let formattedPhone = phone;
+        if (!phone.startsWith('+') && phone.length === 10 && phone.startsWith('09')) {
+            formattedPhone = '+251' + phone.substring(1);
+        }
+        
+        // ማስመሰያ ስኬት መልዕክት
+        alert(✅ መልዕክት በተሳካ ሁኔታ ተልኳል (ሲሙሌሽን) \n\n📡 ላኪ: ${senderId}\n📱 ወደ: ${formattedPhone}\n💬 ይዘት:\n${messageText.substring(0, 120)}${messageText.length > 120 ? '...' : ''});
+        
+        // አማራጭ ተጨማሪ ምላሽ: በconsole ማሳየት
+        console.log([Bulk SMS] Sender:${senderId} | To:${phone} | Message:${messageText});
+        
+        // ከፈለጉ ተጨማሪ ተግባር ማከል ይቻላል
+        // (መልእክቱ በእውነት አይላክም - ሲሙሌተር ነው)
+    }
+    
+    // ተጨማሪ ማሻሻያ: በaccountNumber ላይ ርዝመት ቢያንስ ማሳሰቢያ አያስፈልግም ነገር ግን ለደህንነት.
+    // የገጽ ጭነት ሲፈጸም ናሙና ውሂብ መሙላት እና አንድ ነባሪ መልእክት ማመንጨት
+    window.addEventListener('DOMContentLoaded', () => {
+        // ናሙና ዋጋዎች መሙላት እና generate ማድረግ
+        const fullNameField = document.getElementById('fullName');
+        const accField = document.getElementById('accountNumber');
+        const amountField = document.getElementById('amount');
+        
+        if (!fullNameField.value) fullNameField.value = "ብርሃን አሰፋ";
+        if (!accField.value) accField.value = "1000234567890";
+        if (!amountField.value || amountField.value === "") amountField.value = "3280.50";
+        
+        // በመጨረሻ አንድ ጊዜ ማመንጨት
+        generateSMS();
+        
+        // ተጨማሪ: በamount ላይ ትክክለኛ ፎርማት
+        if(amountField) amountField.addEventListener('blur', function() {
+            let v = parseFloat(this.value);
+            if(isNaN(v)) v = 0;
+            if(v <= 0) v = 0.01;
+            this.value = v.toFixed(2);
+            generateSMS(); // በድጋሚ ማዘመን
+        });
+        
+        // ሌሎች ፊልዶች ሲቀየሩ አውቶማቲክ ማመንጨት ለምቾት (አማራጭ)
+        const inputsToAuto = ['transactionType', 'fullName', 'accountNumber', 'amount'];
+        inputsToAuto.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.addEventListener('change', () => generateSMS());
+                if(el.tagName === 'INPUT' && el.type !== 'button') {
+                    el.addEventListener('input', () => generateSMS());
+                }
+            }
+        });
+    });
+    
+    // የaccount number ማሻሻያ: ፊደል አይፈቀድም + በፍጥነት ማመንጨት
+    document.getElementById('accountNumber')?.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13);
+        generateSMS();
+    });
+    
+    // amount ላይ ጥብቅ የቁጥር ፎርማት ማረጋገጫ
+    document.getElementById('amount')?.addEventListener('input', function(e) {
+        let val = this.value;
+        val = val.replace(/[^0-9.]/g, '');
+        let parts = val.split('.');
+        if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+        this.value = val;
+        if (val !== '' && !isNaN(parseFloat(val)) && parseFloat(val) <= 0) {
+            // አሉታዊ ካለ ማስተካከያ
+            if(parseFloat(val) < 0) this.value = Math.abs(parseFloat(val)).toFixed(2);
+        }
+        generateSMS();
+    });
+    
+    // ለስላሳ ማሳወቂያ: የcopy ቁልፍ በተጨማሪ ከላይ ተዘጋጅቷል
+</script>
+</body>
+</html>
